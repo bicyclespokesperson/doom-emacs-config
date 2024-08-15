@@ -45,6 +45,15 @@
 (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
       doom-themes-enable-italic t) ; if nil, italics is universally disabled
 
+;; Mouse scrolling in terminal emacs
+(unless (display-graphic-p)
+  ;; activate mouse-based scrolling
+  (xterm-mouse-mode 1)
+  (global-set-key (kbd "<mouse-4>") 'scroll-down-line)
+  (global-set-key (kbd "<mouse-5>") 'scroll-up-line))
+
+(setq debug-on-error t)
+
 ;; Load the theme (doom-one, doom-molokai, etc); keep in mind that each
 ;; theme may have their own settings.
 (load-theme 'doom-tomorrow-night t)
@@ -61,6 +70,7 @@
 (setq
  fill-column 100)
 
+(setq scroll-margin 7)
 
 ;; TODO: move to compilation config module?
 (after! compile
@@ -239,11 +249,54 @@
       ;; Saving files
       :desc "Save without formatting the file" "W" #'save-without-formatting
       :map general-override-local-mode-map
+
       :nv "C-h" #'evil-window-left
       :nv "C-j" #'evil-window-down
       :nv "C-k" #'evil-window-up
       :nv "C-l" #'evil-window-right
       )
+
+;; Map <enter> to :
+(evil-define-key 'normal 'global (kbd "RET") 'evil-ex)
+
+
+;; (map! :map evil-normal-state-map
+;;       "H" (cmd! (evil-first-non-blank)
+;;                 (evil-previous-line 7))
+;;       "L" (cmd! (evil-last-non-blank)
+;;                 (evil-next-line 7)))
+
+;; (map! :map evil-visual-state-map
+;;       "H" (cmd! (evil-first-non-blank)
+;;                 (evil-previous-line 7))
+;;       "L" (cmd! (evil-last-non-blank)
+;;                 (evil-next-line 7)))
+
+;; Make H/L work nicely with scroll off
+(defun my-scroll-top-or-up ()
+  "Scroll to the top of the screen if not already there, otherwise move up 7 lines."
+  (interactive)
+  (if (eq (line-number-at-pos (point)) (- (line-number-at-pos (window-start)) scroll-margin))
+      (evil-previous-line 7)
+    (evil-window-top)))
+
+(defun my-scroll-bottom-or-down ()
+  "Scroll to the bottom of the screen if not already there, otherwise move down 7 lines."
+  (interactive)
+  (if (eq (line-number-at-pos (point)) (- (line-number-at-pos (window-end)) scroll-margin))
+      (evil-next-line scroll-margin)
+    (evil-window-bottom)))
+
+(map! :map evil-normal-state-map
+      "H" #'my-scroll-top-or-up
+      "L" #'my-scroll-bottom-or-down)
+
+(map! :map evil-visual-state-map
+      "H" #'my-scroll-top-or-up
+      "L" #'my-scroll-bottom-or-down)
+
+;; (map! :map evil-normal-state-map :n "<return>" #'evil-ex)
+
 (after! cc-mode
   (map! :map c++-mode-map
         "C-l" #'evil-window-right))
